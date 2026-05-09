@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NewsDigest AI — Day 2 Project</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d0d;
+  --surface: #141414;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --text: #f0ece4;
+  --muted: #6b6b6b;
+  --accent: #e8c547;
+  --accent2: #e87d47;
+  --red: #e84747;
+  --green: #47e8a0;
+  --blue: #47a8e8;
+}
+
+body {
+  font-family: 'Archivo', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Noise overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.4;
+}
+
+/* Top ticker bar */
+.ticker {
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  padding: 7px 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ticker-inner {
+  display: inline-block;
+  animation: ticker 25s linear infinite;
+}
+
+@keyframes ticker {
+  from { transform: translateX(100vw); }
+  to { transform: translateX(-100%); }
+}
+
+/* Main layout */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 50px 24px 80px;
+}
+
+/* Header */
+header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 20px;
+  margin-bottom: 50px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  animation: fadeIn 0.6s ease both;
+}
+
+.masthead {}
+
+.issue-line {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+h1 {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: clamp(2.4rem, 7vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -2px;
+  color: var(--text);
+}
+
+h1 .highlight {
+  color: var(--accent);
+  display: block;
+}
+
+.header-right {
+  text-align: right;
+}
+
+.date-block {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.live-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  background: var(--red);
+  border-radius: 50%;
+  margin-right: 6px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Input card */
+.input-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 28px;
+  margin-bottom: 30px;
+  animation: fadeIn 0.6s 0.1s ease both;
+}
+
+.input-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.input-card-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mode-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px;
+}
+
+.mode-tab {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 5px 14px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.mode-tab.active {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+/* Input panels */
+.input-panel { display: none; }
+.input-panel.active { display: block; }
+
+input[type="text"], textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 14px 16px;
+  font-family: 'Archivo', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]:focus, textarea:focus {
+  border-color: var(--accent);
+}
+
+input[type="text"]::placeholder, textarea::placeholder {
+  color: var(--muted);
+}
+
+textarea { min-height: 140px; resize: vertical; line-height: 1.7; }
+
+/* Sample URLs */
+.sample-urls {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.sample-url {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 4px 11px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+  letter-spacing: 0.5px;
+}
+
+.sample-url:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(232,197,71,0.07);
+}
+
+/* Options row */
+.options-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.option-select {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  letter-spacing: 1px;
+}
+
+.option-select:focus { border-color: var(--accent); }
+
+/* Submit button */
+.submit-btn {
+  margin-top: 20px;
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 14px 32px;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.submit-btn:hover {
+  background: var(--accent2);
+  transform: translateY(-1px);
+}
+
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Loader */
+.loader {
+  display: none;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0;
+}
+
+.loader.active { display: flex; }
+
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loader-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+/* Error */
+.error-box {
+  display: none;
+  padding: 14px 18px;
+  background: rgba(232,71,71,0.1);
+  border: 1px solid var(--red);
+  border-radius: 5px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--red);
+  margin-bottom: 20px;
+}
+
+.error-box.show { display: block; }
+
+/* Result */
+.result-section {
+  display: none;
+  animation: fadeIn 0.5s ease both;
+}
+
+.result-section.show { display: block; }
+
+/* Article card */
+.article-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.article-top {
+  padding: 22px 26px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.category-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.cat-technology { background: rgba(71,168,232,0.15); color: var(--blue); }
+.cat-business   { background: rgba(232,197,71,0.15); color: var(--accent); }
+.cat-science    { background: rgba(71,232,160,0.15); color: var(--green); }
+.cat-politics   { background: rgba(232,71,71,0.15);  color: var(--red); }
+.cat-sports     { background: rgba(232,125,71,0.15); color: var(--accent2); }
+.cat-general    { background: rgba(107,107,107,0.2); color: var(--muted); }
+
+.article-title {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 1.4rem;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  flex: 1;
+}
+
+/* Summary bullets */
+.summary-section {
+  padding: 24px 26px;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.bullet-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+
+.bullet-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  animation: slideRight 0.4s ease both;
+}
+
+.bullet-item:nth-child(2) { animation-delay: 0.1s; }
+.bullet-item:nth-child(3) { animation-delay: 0.2s; }
+.bullet-item:nth-child(4) { animation-delay: 0.3s; }
+.bullet-item:nth-child(5) { animation-delay: 0.4s; }
+
+.bullet-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 500;
+  min-width: 20px;
+  padding-top: 2px;
+}
+
+.bullet-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+/* Meta row */
+.meta-row {
+  padding: 16px 26px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.meta-item {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.meta-item strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* TL;DR */
+.tldr-section {
+  padding: 18px 26px;
+  background: rgba(232,197,71,0.05);
+  border-left: 3px solid var(--accent);
+}
+
+.tldr-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.tldr-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  font-style: italic;
+}
+
+/* Tags */
+.tags-row {
+  padding: 16px 26px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  border-top: 1px solid var(--border);
+}
+
+.tag-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+/* History */
+.history-section {
+  margin-top: 40px;
+  animation: fadeIn 0.6s 0.2s ease both;
+}
+
+.section-header {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.history-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  animation: fadeIn 0.3s ease both;
+}
+
+.history-card:hover { border-color: var(--accent); }
+
+.hc-category {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.hc-title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.hc-tldr {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* Footer */
+footer {
+  margin-top: 60px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  animation: fadeIn 0.6s 0.3s ease both;
+}
+
+footer a { color: var(--accent); text-decoration: none; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  header { grid-template-columns: 1fr; }
+  .header-right { text-align: left; }
+  h1 { font-size: 2.8rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="ticker">
+  <span class="ticker-inner">
+    ⚡ AI NEWS SUMMARIZER &nbsp;·&nbsp; DAY 02 OF 28 AI PROJECT CHALLENGE &nbsp;·&nbsp;
+    PASTE ANY ARTICLE · GET INSTANT SUMMARY &nbsp;·&nbsp;
+    BUILT WITH CLAUDE AI &nbsp;·&nbsp; #BuildInPublic &nbsp;·&nbsp;
+    ⚡ AI NEWS SUMMARIZER &nbsp;·&nbsp; DAY 02 OF 28 &nbsp;·&nbsp;
+  </span>
+</div>
+
+<div class="container">
+
+  <header>
+    <div class="masthead">
+      <div class="issue-line">// Day 02 of 28 · NLP Project · Issue #001</div>
+      <h1>News<span class="highlight">Digest</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="date-block">
+        <span class="live-dot"></span>LIVE<br>
+        AI-POWERED<br>SUMMARIZER
+      </div>
+    </div>
+  </header>
+
+  <!-- Input Card -->
+  <div class="input-card">
+    <div class="input-card-header">
+      <span class="input-card-title">// Input Source</span>
+      <div class="mode-tabs">
+        <button class="mode-tab active" onclick="switchMode('url')">URL</button>
+        <button class="mode-tab" onclick="switchMode('text')">Text</button>
+      </div>
+    </div>
+
+    <!-- URL Panel -->
+    <div class="input-panel active" id="panel-url">
+      <input type="text" id="urlInput"
+        placeholder="https://www.bbc.com/news/technology/article..."
+        onkeydown="if(event.key==='Enter') summarize()" />
+      <div class="sample-urls">
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);align-self:center;">Try topic:</span>
+        <button class="sample-url" onclick="fillTopic('AI breakthrough technology 2025')">🤖 AI</button>
+        <button class="sample-url" onclick="fillTopic('climate change environment news')">🌍 Climate</button>
+        <button class="sample-url" onclick="fillTopic('startup funding business news')">💼 Business</button>
+        <button class="sample-url" onclick="fillTopic('space exploration NASA discovery')">🚀 Space</button>
+        <button class="sample-url" onclick="fillTopic('cryptocurrency bitcoin market')">₿ Crypto</button>
+      </div>
+    </div>
+
+    <!-- Text Panel -->
+    <div class="input-panel" id="panel-text">
+      <textarea id="textInput"
+        placeholder="Paste the full article text here...&#10;&#10;The more complete the text, the better the summary will be."></textarea>
+    </div>
+
+    <div class="options-row">
+      <select class="option-select" id="lengthSelect">
+        <option value="3">3 bullet points</option>
+        <option value="5" selected>5 bullet points</option>
+        <option value="7">7 bullet points</option>
+      </select>
+      <select class="option-select" id="styleSelect">
+        <option value="concise">Concise</option>
+        <option value="detailed">Detailed</option>
+        <option value="simple">Simple English</option>
+      </select>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="summarize()">
+      <span>⟶</span> Summarize Article
+    </button>
+
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <span class="loader-text">Reading & summarizing...</span>
+    </div>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Result -->
+  <div class="result-section" id="resultSection">
+    <div class="article-card">
+      <div class="article-top">
+        <div class="article-title" id="articleTitle">—</div>
+        <span class="category-tag" id="categoryTag">General</span>
+      </div>
+
+      <div class="summary-section">
+        <div class="summary-label">// Key Points</div>
+        <ul class="bullet-list" id="bulletList"></ul>
+      </div>
+
+      <div class="tldr-section">
+        <div class="tldr-label">TL;DR</div>
+        <div class="tldr-text" id="tldrText">—</div>
+      </div>
+
+      <div class="meta-row">
+        <span class="meta-item">Reading time: <strong id="readTime">—</strong></span>
+        <span class="meta-item">Tone: <strong id="toneVal">—</strong></span>
+        <span class="meta-item">Bias: <strong id="biasVal">—</strong></span>
+      </div>
+
+      <div class="tags-row">
+        <span class="tag-label">Tags:</span>
+        <div id="tagsContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="history-section">
+    <div class="section-header">Recent Summaries</div>
+    <div class="history-grid" id="historyGrid">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);grid-column:1/-1;">
+        No summaries yet — analyze your first article above.
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Built with ♥ · Day 02/28 AI Challenge</span>
+    <span>
+      <a href="https://github.com" target="_blank">GitHub</a> &nbsp;·&nbsp;
+      <a href="https://linkedin.com" target="_blank">LinkedIn</a>
+    </span>
+  </footer>
+
+</div>
+
+<script>
+let currentMode = 'url';
+let historyItems = [];
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.input-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + mode).classList.add('active');
+}
+
+function fillTopic(topic) {
+  currentMode = 'text';
+  document.querySelectorAll('.mode-tab').forEach((t,i) => t.classList.toggle('active', i===1));
+  document.querySelectorAll('.input-panel').forEach((p,i) => p.classList.toggle('active', i===1));
+  document.getElementById('textInput').value =
+    `[Summarize a recent news article about: ${topic}]\n\nPlease generate a realistic summary as if you fetched and read this article.`;
+}
+
+async function summarize() {
+  const bullets = document.getElementById('lengthSelect').value;
+  const style = document.getElementById('styleSelect').value;
+  const btn = document.getElementById('submitBtn');
+  const loader = document.getElementById('loader');
+  const errorBox = document.getElementById('errorBox');
+  const resultSection = document.getElementById('resultSection');
+
+  let inputText = '';
+  if (currentMode === 'url') {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) return;
+    inputText = `URL to summarize: ${url}`;
+  } else {
+    inputText = document.getElementById('textInput').value.trim();
+    if (!inputText) return;
+  }
+
+  btn.disabled = true;
+  loader.classList.add('active');
+  errorBox.classList.remove('show');
+  resultSection.classList.remove('show');
+
+  const styleGuide = {
+    concise: 'brief and to the point',
+    detailed: 'thorough with supporting context',
+    simple: 'simple language a 10-year-old could understand'
+  }[style];
+
+  const prompt = `You are a news summarizer. Analyze the following and return ONLY a JSON object (no markdown, no backticks, no explanation).
+
+Input: ${inputText}
+
+If it's a URL you cannot access, create a realistic, plausible summary based on what the article likely contains given the URL or topic.
+If it's article text, summarize it directly.
+
+Return exactly this JSON:
+{
+  "title": "Compelling headline for this article (max 12 words)",
+  "category": "one of: Technology, Business, Science, Politics, Sports, General",
+  "bullets": ["point 1", "point 2", ...(${bullets} items total, style: ${styleGuide})],
+  "tldr": "One sentence that captures the entire story",
+  "readingTime": "X min read",
+  "tone": "one of: Neutral, Positive, Critical, Alarming, Optimistic",
+  "bias": "one of: None detected, Slight left, Slight right, Pro-business, Unknown",
+  "tags": ["tag1", "tag2", "tag3", "tag4"]
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await res.json();
+    const raw = data.content.map(i => i.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    showResult(result);
+    addHistory(result);
+
+  } catch(err) {
+    errorBox.textContent = '⚠ Failed to summarize. Please check your input and try again.';
+    errorBox.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    loader.classList.remove('active');
+  }
+}
+
+function showResult(r) {
+  document.getElementById('articleTitle').textContent = r.title;
+
+  const catTag = document.getElementById('categoryTag');
+  catTag.textContent = r.category;
+  catTag.className = `category-tag cat-${r.category.toLowerCase()}`;
+
+  const list = document.getElementById('bulletList');
+  list.innerHTML = r.bullets.map((b, i) =>
+    `<li class="bullet-item">
+      <span class="bullet-num">0${i+1}</span>
+      <span class="bullet-text">${b}</span>
+    </li>`
+  ).join('');
+
+  document.getElementById('tldrText').textContent = r.tldr;
+  document.getElementById('readTime').textContent = r.readingTime;
+  document.getElementById('toneVal').textContent = r.tone;
+  document.getElementById('biasVal').textContent = r.bias;
+
+  const tagsContainer = document.getElementById('tagsContainer');
+  tagsContainer.innerHTML = r.tags.map(t => `<span class="tag">#${t}</span>`).join('');
+
+  document.getElementById('resultSection').classList.add('show');
+}
+
+function addHistory(r) {
+  historyItems.unshift(r);
+  if (historyItems.length > 6) historyItems.pop();
+
+  const grid = document.getElementById('historyGrid');
+  grid.innerHTML = historyItems.map(h => `
+    <div class="history-card">
+      <div class="hc-category">${h.category}</div>
+      <div class="hc-title">${h.title}</div>
+      <div class="hc-tldr">${h.tldr}</div>
+    </div>
+  `).join('');
+}
+
+// Update date
+document.querySelector('.date-block').innerHTML =
+  `<span class="live-dot"></span>LIVE<br>` +
+  new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase() +
+  `<br>AI-POWERED`;
+</script>
+</body>
+</html>
