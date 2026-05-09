@@ -75,7 +75,7 @@ The prompt instructs Claude to return strict JSON — no markdown, no preamble �
 
 ## 👨‍💻 Author
 
-
+HAMID UR RAHMAN
 
 ---
 
